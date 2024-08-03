@@ -1,7 +1,8 @@
 #include "defs.h"
 #include "sensor.h"
 #include "util.h"
-#include "uart.h"
+
+#include "tusb.h"
 
 #include IMU_FIRMWARE_H
 #define IMU_FIRMWARE_LEN CAT(IMU_FIRMWARE, _len)
@@ -11,8 +12,6 @@ bool poll_status(uint8_t check_ready, uint8_t check_verify, uint64_t print_inter
 void sensor_main()
 {
 	imu_setup();
-
-	userpanic("core1 exit");
 }
 
 void imu_setup()
@@ -20,37 +19,37 @@ void imu_setup()
 	imu_inst_setup();
 	if (!imu_reset())
 	{
-		userpanic("imu reset");
+		panic("imu reset");
 	}
 
-	uart_printf(uart0, "[INFO] IMU Reset Success\n");
+	tud_cdc_printf("[INFO] IMU Reset Success\n");
 
 	uint8_t imu_identifier = imu_read_reg(0x1C);
 	uint8_t imu_revision = imu_read_reg(0x1D);
 	uint8_t rom_revision_lsb = imu_read_reg(0x1E);
 	uint8_t rom_revision_msb = imu_read_reg(0x1F);
 
-	uart_printf(uart0, "[INFO] IMU Identifier: 0x%02X\n", imu_identifier);
-	uart_printf(uart0, "[INFO] IMU Revision: 0x%02X\n", imu_revision);
-	uart_printf(uart0, "[INFO] ROM Revision: 0x%02X%02X\n", rom_revision_msb, rom_revision_lsb);
+	tud_cdc_printf("[INFO] IMU Identifier: 0x%02X\n", imu_identifier);
+	tud_cdc_printf("[INFO] IMU Revision: 0x%02X\n", imu_revision);
+	tud_cdc_printf("[INFO] ROM Revision: 0x%02X%02X\n", rom_revision_msb, rom_revision_lsb);
 
-	uart_printf(uart0, "[INFO] IMU Reset\n");
+	tud_cdc_printf("[INFO] IMU Reset\n");
 	imu_reset_soft();
 	sleep_ms(100);
 
 	uint8_t feature_status = imu_read_reg(0x24);
 	uint8_t boot_status = imu_read_reg(0x25);
 
-	uart_printf(uart0, "[INFO] Feature Status: 0x%02X\n", feature_status);
-	uart_printf(uart0, "[INFO] Boot Status: 0x%02X\n", boot_status);
+	tud_cdc_printf("[INFO] Feature Status: 0x%02X\n", feature_status);
+	tud_cdc_printf("[INFO] Boot Status: 0x%02X\n", boot_status);
 
-	// uart_printf(uart0, "[INFO] Setting Turbo Mode\n");
+	// tud_cdc_printf("[INFO] Setting Turbo Mode\n");
 	// imu_write_reg(0x05, 0x00);
 
-	// uart_printf(uart0, "[INFO] Setting Host Interrupt\n");
+	// tud_cdc_printf("[INFO] Setting Host Interrupt\n");
 	// imu_write_reg(0x07, 0x00);
 
-	// uart_printf(uart0, "[INFO] Setting Host Interface\n");
+	// tud_cdc_printf("[INFO] Setting Host Interface\n");
 	// imu_write_reg(0x06, 0x00);
 
 	// if (!poll_status(WAIT_TRUE, WAIT_NONE))
@@ -58,7 +57,7 @@ void imu_setup()
 	// 	userpanic("imu status: interface");
 	// }
 
-	// uart_printf(uart0, "[INFO] Loading Firmware\n");
+	// tud_cdc_printf("[INFO] Loading Firmware\n");
 	// uint8_t payload[5];
 	// payload[0] == 0x00;
 	// payload[1] == 0x02;
@@ -69,8 +68,8 @@ void imu_setup()
 	// payload[4] = (fw_len >> 8) & 0xFF;
 
 	// const char firmware_name[] = STRINGIFY(IMU_FIRMWARE);
-	// uart_printf(uart0, "[INFO] Firmware Name: %s\n", firmware_name);
-	// uart_printf(uart0, "[INFO] Firmware Length: %d\n", IMU_FIRMWARE_LEN);
+	// tud_cdc_printf("[INFO] Firmware Name: %s\n", firmware_name);
+	// tud_cdc_printf("[INFO] Firmware Length: %d\n", IMU_FIRMWARE_LEN);
 
 	// uint8_t clear[] = {0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -85,7 +84,7 @@ void imu_setup()
 	// 	userpanic("imu status: firmware loading");
 	// }
 
-	// uart_printf(uart0, "[INFO] Starting Firmware\n");
+	// tud_cdc_printf("[INFO] Starting Firmware\n");
 	// payload[0] = 0x00;
 	// payload[1] = 0x03;
 	// payload[2] = 0x00;
@@ -99,7 +98,7 @@ void imu_setup()
 	// poll_status(WAIT_FALSE, WAIT_NONE);
 	// poll_status(WAIT_TRUE, WAIT_NONE);
 
-	// uart_printf(uart0, "[INFO] Firmware Loaded\n");
+	// tud_cdc_printf("[INFO] Firmware Loaded\n");
 }
 
 void imu_inst_setup()
@@ -160,7 +159,7 @@ bool imu_reset()
 
 	if (!poll_status(WAIT_TRUE, WAIT_NONE))
 	{
-		userpanic("imu status: interface");
+		panic("imu status: interface");
 	}
 
 	while (count < IMU_SENSOR_TRIES)
@@ -170,22 +169,22 @@ bool imu_reset()
 		uint8_t sensor_id = imu_read_reg(0x2B);
 		if (sensor_id == 0x70 || sensor_id == 0xF0)
 		{
-			uart_printf(uart0, "[INFO] Sensor ID: 0x%X\n", sensor_id);
+			tud_cdc_printf("[INFO] Sensor ID: 0x%X\n", sensor_id);
 			return true;
 		}
-		uart_printf(uart0, "[INFO] Sensor ID: 0x%X, expected 0x70 or 0xF0 (%d / %d)\n", sensor_id, count, IMU_SENSOR_TRIES);
+		tud_cdc_printf("[INFO] Sensor ID: 0x%X, expected 0x70 or 0xF0 (%d / %d)\n", sensor_id, count, IMU_SENSOR_TRIES);
 	}
 
 	if (count == IMU_SENSOR_TRIES)
 	{
-		uart_printf(uart0, "[INFO] Sensor Soft Reset Failed, trying Hard Reset...\n");
+		tud_cdc_printf("[INFO] Sensor Soft Reset Failed, trying Hard Reset...\n");
 	}
 
 	imu_reset_hard();
 
 	if (!poll_status(WAIT_TRUE, WAIT_NONE))
 	{
-		userpanic("imu status: interface");
+		panic("imu status: interface");
 	}
 
 	imu_reset_soft();
@@ -198,10 +197,10 @@ bool imu_reset()
 		uint8_t sensor_id = imu_read_reg(0x2B);
 		if (sensor_id == 0x70 || sensor_id == 0xF0)
 		{
-			uart_printf(uart0, "[INFO] Sensor ID: 0x%X\n", sensor_id);
+			tud_cdc_printf("[INFO] Sensor ID: 0x%X\n", sensor_id);
 			return true;
 		}
-		uart_printf(uart0, "[INFO] Sensor ID: 0x%X, expected 0x70 or 0xF0 (%d / %d)\n", sensor_id, count, IMU_SENSOR_TRIES);
+		tud_cdc_printf("[INFO] Sensor ID: 0x%X, expected 0x70 or 0xF0 (%d / %d)\n", sensor_id, count, IMU_SENSOR_TRIES);
 	}
 
 	return false;
@@ -228,22 +227,22 @@ void print_status(uint8_t status)
 	bool firmware_verify = (status & 0x40) == 0;
 	bool firmware_running = (status & 0x80) == 0;
 
-	uart_printf(uart0, "[INFO] \n");
-	uart_printf(uart0, "[INFO] Boot Status: 0x%02X\n", status);
-	uart_printf(uart0, "[INFO] \tInterface: %s\n", interface_ready ? "Ready" : "Not Ready");
+	tud_cdc_printf("[INFO] \n");
+	tud_cdc_printf("[INFO] Boot Status: 0x%02X\n", status);
+	tud_cdc_printf("[INFO] \tInterface: %s\n", interface_ready ? "Ready" : "Not Ready");
 	if (firmware_loading)
 	{
-		uart_printf(uart0, "[INFO] \tFirmware: Verification in Progress\n");
+		tud_cdc_printf("[INFO] \tFirmware: Verification in Progress\n");
 	}
 	else if (firmware_verify)
 	{
-		uart_printf(uart0, "[INFO] \tFirmware: Verification Success\n");
+		tud_cdc_printf("[INFO] \tFirmware: Verification Success\n");
 	}
 	else
 	{
-		uart_printf(uart0, "[INFO] \tFirmware: Verification Failed\n");
+		tud_cdc_printf("[INFO] \tFirmware: Verification Failed\n");
 	}
-	uart_printf(uart0, "[INFO] \tFirmware State: %s\n\n", firmware_running ? "Running" : "Halted");
+	tud_cdc_printf("[INFO] \tFirmware State: %s\n\n", firmware_running ? "Running" : "Halted");
 }
 
 bool poll_status(uint8_t check_ready, uint8_t check_verify, uint64_t print_interval_ms, uint64_t timeout_ms)
@@ -268,7 +267,7 @@ bool poll_status(uint8_t check_ready, uint8_t check_verify, uint64_t print_inter
 
 		if (time_us_64() - time_check_start > timeout_ms * 1000)
 		{
-			uart_printf(uart0, "[ERROR] Timeout while waiting for the firmware to load\n");
+			tud_cdc_printf("[ERROR] Timeout while waiting for the firmware to load\n");
 			return false;
 		}
 

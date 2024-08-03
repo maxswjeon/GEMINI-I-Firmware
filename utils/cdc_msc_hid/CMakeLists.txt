@@ -81,6 +81,8 @@ target_link_libraries(${PROJECT} PRIVATE
     pico_multicore
     hardware_pio
     hardware_dma
+    hardware_uart
+    hardware_flash
     tinyusb_device
     tinyusb_host
     tinyusb_board

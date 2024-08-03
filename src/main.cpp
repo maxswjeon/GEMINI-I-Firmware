@@ -2,10 +2,17 @@
 
 #include <pico/stdlib.h>
 #include <pico/binary_info.h>
+#include <pico/multicore.h>
+#include <pico/bootrom.h>
+
+#include <hardware/watchdog.h>
 
 #include "sensor.h"
 #include "util.h"
-#include "uart.h"
+
+#include "bsp/board_api.h"
+#include "tusb.h"
+#include "usb_cdc.h"
 
 // PC Module: E22-900T22U
 // Green, Not Blinking: Transmission Mode
@@ -24,63 +31,50 @@
 
 int main()
 {
-	uart_init(uart0, 115200);
-	gpio_set_function(0, GPIO_FUNC_UART);
-	gpio_set_function(1, GPIO_FUNC_UART);
-	uart_set_hw_flow(uart0, false, false);
-	uart_set_format(uart0, 8, 1, UART_PARITY_NONE);
-	uart_set_fifo_enabled(uart0, true);
-	bi_decl(bi_2pins_with_func(0, 1, GPIO_FUNC_UART));
+	board_init();
+	usbd_serial_init();
 
-	// uart_init(uart1, 115200);
-	// gpio_set_function(8, GPIO_FUNC_UART);
-	// gpio_set_function(9, GPIO_FUNC_UART);
+	tuh_init(BOARD_TUH_RHPORT);
+	tud_init(BOARD_TUD_RHPORT);
 
-	// uart_set_hw_flow(uart1, false, false);
-	// uart_set_format(uart1, 8, 1, UART_PARITY_NONE);
-
-	uart_rx_clear(uart0);
-
-	while (true)
+	if (board_init_after_tusb)
 	{
-		uart_puts(uart0, "Press any key to start...\n");
-
-		if (uart_is_readable(uart0))
-		{
-			uart_getc(uart0);
-			break;
-		}
-
-		sleep_ms(1000);
+		board_init_after_tusb();
 	}
 
 	multicore_launch_core1(sensor_main);
 
-	uart_rx_clear(uart0);
-
 	while (true)
 	{
-		if (uart_is_readable(uart0))
+		tuh_task();
+		tud_task();
+	}
+}
+
+void tud_cdc_rx_cb(uint8_t itf)
+{
+	(void)itf; // no-op
+
+	char buf[512];
+	uint32_t count = tud_cdc_read(buf, sizeof(buf));
+
+	for (int i = 0; i < count; ++i)
+	{
+		if (buf[i] == 0x03) // Ctrl-C
 		{
-			char c = uart_getc(uart0);
-
-			if (c == 0x03) // Ctrl+C
-			{
-				watchdog_enable(1, 1);
-				while (true)
-					;
-			}
-
-			if (c == 0x04) // Ctrl+D
-			{
-				reset_usb_boot(0, 0);
-				while (true)
-					;
-			}
+			watchdog_enable(0, 0);
+			while (1)
+				;
 		}
 
-		sleep_ms(10);
-	}
+		if (buf[i] == 0x04) // Ctrl-D
+		{
+			reset_usb_boot(0, 0);
+			while (1)
+				;
+		}
 
-	userpanic("main exits");
+		tud_cdc_write_char(buf[i]);
+	}
+	tud_cdc_write_flush();
 }

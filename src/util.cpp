@@ -1,49 +1,85 @@
 #include "defs.h"
 #include "util.h"
 
-void __attribute__((noreturn)) __printflike(1, 0) userpanic(const char *fmt, ...)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+
+#include <pico/platform.h>
+#include <pico/multicore.h>
+#include <pico/runtime.h>
+
+#include "tusb.h"
+
+bool core1_panic = false;
+char *core1_panic_message = NULL;
+
+void tud_cdc_vprintf(const char *fmt, va_list args)
 {
-	va_list args1, args2;
-	va_start(args1, fmt);
-	va_copy(args2, args1);
-
-	size_t len = vsnprintf(NULL, 0, fmt, args1) + 1;
-	va_end(args1);
-
+	size_t len = vsnprintf(NULL, 0, fmt, args) + 1;
 	char *message = (char *)malloc(len);
-	vsprintf(message, fmt, args2);
-	va_end(args2);
+	vsprintf(message, fmt, args);
 
-	uart_printf(PANIC_UART, "\n\npanic: %s\n", message);
+	tud_cdc_write_str(message);
+	tud_cdc_write_flush();
+}
 
-	uart_puts(PANIC_UART, "Press Ctrl+C to reset...\n");
-	uart_puts(PANIC_UART, "Press Ctrl+D to upload...\n");
+void __printflike(1, 0) tud_cdc_printf(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	tud_cdc_vprintf(fmt, args);
+}
 
-	uart_rx_clear(PANIC_UART);
-
-	multicore_reset_core1();
-
-	while (true)
+void __attribute__((noreturn)) __printflike(1, 0) tusb_panic(const char *fmt, ...)
+{
+	if (get_core_num() == 1)
 	{
-		if (uart_is_readable(PANIC_UART))
+		va_list args1, args2;
+		va_start(args1, fmt);
+
+		size_t len = vsnprintf(NULL, 0, fmt, args1) + 1;
+		va_end(args1);
+
+		core1_panic_message = (char *)malloc(len);
+		vsprintf(core1_panic_message, fmt, args2);
+		va_end(args2);
+
+		core1_panic = true;
+
+		multicore_reset_core1();
+		while (true)
 		{
-			char c = uart_getc(PANIC_UART);
+			tight_loop_contents();
+		}
+	}
 
-			if (c == 0x03) // Ctrl+C
-			{
-				watchdog_enable(1, 1);
-				while (true)
-					;
-			}
+	if (core1_panic)
+	{
+		tud_cdc_write_str("\r\n\r\npanic: core1 panic\r\n");
 
-			if (c == 0x04) // Ctrl+D
-			{
-				reset_usb_boot(0, 0);
-				while (true)
-					;
-			}
+		if (core1_panic_message)
+		{
+			tud_cdc_write_str(core1_panic_message);
 		}
 
-		sleep_ms(10);
+		while (true)
+		{
+			tight_loop_contents();
+		}
+	}
+	else
+	{
+		tud_cdc_write_str("\r\n\r\npanic: core0 panic\r\n");
+		va_list args;
+		va_start(args, fmt);
+		tud_cdc_vprintf(fmt, args);
+
+		while (true)
+		{
+			tud_task();
+			tuh_task();
+		}
 	}
 }
