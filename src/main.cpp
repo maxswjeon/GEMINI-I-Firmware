@@ -3,7 +3,9 @@
 #include <pico/stdlib.h>
 #include <pico/binary_info.h>
 
+#include "sensor.h"
 #include "util.h"
+#include "uart.h"
 
 // PC Module: E22-900T22U
 // Green, Not Blinking: Transmission Mode
@@ -50,6 +52,34 @@ int main()
 		}
 
 		sleep_ms(1000);
+	}
+
+	multicore_launch_core1(sensor_main);
+
+	uart_rx_clear(uart0);
+
+	while (true)
+	{
+		if (uart_is_readable(uart0))
+		{
+			char c = uart_getc(uart0);
+
+			if (c == 0x03) // Ctrl+C
+			{
+				watchdog_enable(1, 1);
+				while (true)
+					;
+			}
+
+			if (c == 0x04) // Ctrl+D
+			{
+				reset_usb_boot(0, 0);
+				while (true)
+					;
+			}
+		}
+
+		sleep_ms(10);
 	}
 
 	userpanic("main exits");

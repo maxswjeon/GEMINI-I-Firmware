@@ -11,7 +11,14 @@
 #include <hardware/uart.h>
 #include <hardware/watchdog.h>
 
-void uart_rx_clear(uart_inst_t *uart);
-void __attribute__((noreturn)) __printflike(1, 0) userpanic(const char *fmt, ...);
+#include "uart.h"
+
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
+
+#define CAT_2(X, Y) X##Y
+#define CAT(X, Y) CAT_2(X, Y)
+
+void __attribute__((noreturn)) __printflike(1, 2) userpanic(const char *fmt, ...);
 
 #endif // __UTIL_H

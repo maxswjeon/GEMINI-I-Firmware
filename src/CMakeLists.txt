@@ -8,11 +8,13 @@ pico_add_extra_outputs(${PROJECT})
 
 target_include_directories(${PROJECT} PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_ROOT_DIR}/firmware
     ${CMAKE_ROOT_DIR}/include
     ${CMAKE_ROOT_DIR}/lib
     ${CMAKE_ROOT_DIR}
 )
 
+target_link_options(${PROJECT} PRIVATE -Xlinker --print-memory-usage)
 target_link_libraries(${PROJECT}
     pico_stdlib
     pico_cyw43_arch_none
