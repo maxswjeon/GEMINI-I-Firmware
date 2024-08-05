@@ -49,7 +49,7 @@ include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 # General Setup
 #
 set(FAMILY rp2040)
-set(PROJECT cdc_msc_hid)
+set(PROJECT cdc-msc-hid)
 project(${PROJECT} C CXX ASM)
 add_executable(${PROJECT})
 
