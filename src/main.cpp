@@ -14,21 +14,6 @@
 #include "tusb.h"
 #include "usb_cdc.h"
 
-// PC Module: E22-900T22U
-// Green, Not Blinking: Transmission Mode
-// Green, Blinking: Transmission in Progress
-// Red, Not Blinking: Configuration Mode
-// Red, Blinking: Configuration in Progress (Command Response)
-
-// Targeted launch (Exact Match)
-// Broadcast transmission (Unicast)
-
-// Default parameters
-// Address: 0x0000
-// Channel: 0x12
-// Baud: 9600
-// Parity: 8N1
-
 int main()
 {
 	board_init();
@@ -42,14 +27,54 @@ int main()
 		board_init_after_tusb();
 	}
 
-	multicore_launch_core1(sensor_main);
+	uint64_t last_print = 0;
+	int32_t c;
 
 	while (true)
 	{
-		tuh_task();
+		if (time_us_64() - last_print > 1000 * 1000)
+		{
+			tud_cdc_printf("Press any key to continue\r\n");
+			last_print = time_us_64();
+		}
+
+		tud_cdc_write_flush();
 		tud_task();
+		tuh_task();
+
+		int32_t c = tud_cdc_buffer_read();
+		if (c != -1)
+		{
+			break;
+		}
+	}
+
+	// Ctrl-T (0x14) to launch RTC setup
+	if (c == 0x14)
+	{
+#ifdef RTC_CONFIGURE_SUPPORT
+		tud_cdc_printf("Launching RTC Setup\r\n");
+		multicore_launch_core1(rtc_configure);
+#else
+		tud_cdc_printf("RTC Setup not supported\r\n");
+#endif
+	}
+	else
+	{
+		multicore_launch_core1(sensor_main);
+	}
+
+	while (true)
+	{
+		tud_cdc_write_flush();
+		tud_task();
+		tuh_task();
 	}
 }
+
+//--------------------------------------------------------------------+
+// TinyUSB Callbacks
+//--------------------------------------------------------------------+
 
 void tud_cdc_rx_cb(uint8_t itf)
 {
@@ -74,7 +99,17 @@ void tud_cdc_rx_cb(uint8_t itf)
 				;
 		}
 
+		tud_cdc_buffer_write(buf[i]);
 		tud_cdc_write_char(buf[i]);
 	}
-	tud_cdc_write_flush();
+}
+
+void tuh_mount_cb(uint8_t dev_addr)
+{
+	tud_cdc_printf("A device with address %d is mounted\r\n", dev_addr);
+}
+
+void tuh_umount_cb(uint8_t dev_addr)
+{
+	tud_cdc_printf("A device with address %d is unmounted \r\n", dev_addr);
 }

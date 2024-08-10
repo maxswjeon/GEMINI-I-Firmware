@@ -34,7 +34,7 @@ endif()
 # Extract Dependencies for PICO_TINYUSB_PATH
 # This enables Pico-PIO-USB
 #
-find_package (Python3 COMPONENTS Interpreter)
+find_package(Python3 COMPONENTS Interpreter)
 execute_process(COMMAND ${Python3_EXECUTABLE} ${PICO_TINYUSB_PATH}/tools/get_deps.py rp2040)
 
 #
@@ -79,6 +79,7 @@ target_link_libraries(${PROJECT} PRIVATE
     pico_runtime
     pico_multicore
     pico_sync
+    pico_rand
     hardware_pwm
     hardware_i2c
     hardware_spi
@@ -103,3 +104,13 @@ target_compile_definitions(${PROJECT} PRIVATE
 #
 pico_enable_stdio_uart(${PROJECT} 0)
 pico_add_extra_outputs(${PROJECT})
+
+add_custom_command(TARGET ${PROJECT} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+    ${CMAKE_CURRENT_LIST_DIR}/dist
+)
+add_custom_command(TARGET ${PROJECT} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_LIST_DIR}/build/${PROJECT}.uf2
+    ${CMAKE_CURRENT_LIST_DIR}/dist/${PROJECT}.uf2
+)

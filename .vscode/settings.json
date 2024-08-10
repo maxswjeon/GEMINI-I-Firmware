@@ -1,6 +1,7 @@
 {
   "files.associations": {
     "stdarg.h": "c",
-    "reent.h": "c"
+    "reent.h": "c",
+    "algorithm": "cpp"
   }
 }

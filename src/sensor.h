@@ -12,6 +12,7 @@
 #define WAIT_FALSE 1
 #define WAIT_NONE 2
 
+void rtc_setup();
 void sensor_main();
 
 // IMU (BHI260AP)
