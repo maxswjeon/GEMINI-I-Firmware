@@ -1,6 +1,8 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
+#include "defs.h"
+
 #include <pico/stdlib.h>
 
 #include <stddef.h>
@@ -26,6 +28,15 @@ extern "C"
 }
 #endif
 
+#if DEBUG_UART
+#include <stdio.h>
+#define dprintf(...) printf(__VA_ARGS__)
+#elif DEBUG_USB
+#define dprintf(...) tud_cdc_printf(__VA_ARGS__)
+#else
+#define dprintf(...) void(0)
+#endif
+
 void __printflike(1, 0) tud_cdc_printf(const char *fmt, ...);
 
 int8_t tud_cdc_buffer_get_int8(bool flush = true);
@@ -46,5 +57,7 @@ void tud_cdc_buffer_init();
 void tud_cdc_buffer_flush();
 int32_t tud_cdc_buffer_read();
 void tud_cdc_buffer_write(int32_t c);
+
+bool is_printable(uint8_t c);
 
 #endif // __UTIL_H

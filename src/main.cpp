@@ -4,6 +4,7 @@
 #include <pico/binary_info.h>
 #include <pico/multicore.h>
 #include <pico/bootrom.h>
+#include <pico/cyw43_arch.h>
 
 #include <hardware/watchdog.h>
 
@@ -19,6 +20,8 @@ int main()
 	board_init();
 	usbd_serial_init();
 
+	cyw43_arch_init();
+
 	tuh_init(BOARD_TUH_RHPORT);
 	tud_init(BOARD_TUD_RHPORT);
 
@@ -30,6 +33,7 @@ int main()
 	uint64_t last_print = 0;
 	int32_t c;
 
+	tud_cdc_read_flush();
 	while (true)
 	{
 		if (time_us_64() - last_print > 1000 * 1000)
@@ -49,10 +53,10 @@ int main()
 		}
 	}
 
-	// Ctrl-T (0x14) to launch RTC setup
-	if (c == 0x14)
+	// R or r to launch RTC setup
+	if (c == 'R' || c == 'r')
 	{
-#ifdef RTC_CONFIGURE_SUPPORT
+#if RTC_CONFIGURE_SUPPORT
 		tud_cdc_printf("Launching RTC Setup\r\n");
 		multicore_launch_core1(rtc_configure);
 #else

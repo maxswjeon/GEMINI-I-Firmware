@@ -8,6 +8,11 @@
 #include <hardware/uart.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
+
+#ifdef RASPBERRYPI_PICO_W
+#include <pico/cyw43_arch.h>
+#endif /* RASPBERRYPI_PICO_W */
+
 #include <string.h>
 #include <tusb.h>
 
@@ -210,7 +215,8 @@ void core1_entry(void)
 			}
 		}
 
-		gpio_put(LED_PIN, con);
+		// gpio_put(LED_PIN, con);
+		cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, con);
 	}
 }
 
@@ -323,8 +329,10 @@ int main(void)
 	for (itf = 0; itf < CFG_TUD_CDC; itf++)
 		init_uart_data(itf);
 
-	gpio_init(LED_PIN);
-	gpio_set_dir(LED_PIN, GPIO_OUT);
+	cyw43_arch_init();
+
+	// gpio_init(LED_PIN);
+	// gpio_set_dir(LED_PIN, GPIO_OUT);
 
 	multicore_launch_core1(core1_entry);
 

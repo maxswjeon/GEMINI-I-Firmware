@@ -10,3 +10,6 @@
 [submodule "lib/tinyusb"]
 	path = lib/tinyusb
 	url = https://github.com/hathach/tinyusb
+[submodule "libs/bosch"]
+	path = libs/bosch
+	url = https://github.com/boschsensortec/BHY2_SensorAPI

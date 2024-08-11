@@ -29,10 +29,23 @@ target_include_directories(uart_bridge PUBLIC
 	./
 	pico-sdk/lib/tinyusb/src)
 
+set(LIBRARIES
+    hardware_flash
+    pico_multicore
+    pico_stdlib
+    tinyusb_device
+    pico_cyw43_arch_none
+)
+
+if ("${BOARD}" STREQUAL "pico_w")
+    list(APPEND LIBRARIES 
+        pico_cyw43_arch_none
+    )
+endif()
+
 target_link_libraries(uart_bridge
-	hardware_flash
-	pico_multicore
-	pico_stdlib
-	tinyusb_device)
+    ${LIBRARIES}
+)
+
 
 pico_add_extra_outputs(uart_bridge)

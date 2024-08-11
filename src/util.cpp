@@ -13,7 +13,7 @@
 
 #include "tusb.h"
 
-auto_init_mutex(serial_mutex);
+// auto_init_mutex(serial_mutex);
 
 bool core1_panic = false;
 char core1_panic_message[2048] = {
@@ -37,20 +37,18 @@ void tud_cdc_vprintf(const char *fmt, va_list args)
 	va_end(args2);
 
 	tud_cdc_write_str(message);
-	tud_cdc_write_flush();
-	tud_task();
 }
 
 void __printflike(1, 0) tud_cdc_printf(const char *fmt, ...)
 {
-	mutex_enter_blocking(&serial_mutex);
+	// mutex_enter_blocking(&serial_mutex);
 
 	va_list args;
 	va_start(args, fmt);
 	tud_cdc_vprintf(fmt, args);
 	va_end(args);
 
-	mutex_exit(&serial_mutex);
+	// mutex_exit(&serial_mutex);
 }
 
 void __attribute__((noreturn)) __printflike(1, 0) tusb_panic(const char *fmt, ...)
@@ -491,4 +489,17 @@ uint32_t tud_cdc_buffer_get_fixed_uint32(uint8_t target, bool flush)
 	}
 
 	return value;
+}
+
+bool is_printable(uint8_t c)
+{
+	const char list[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+	for (size_t i = 0; i < sizeof(list); i++)
+	{
+		if (c == list[i])
+		{
+			return true;
+		}
+	}
+	return false;
 }
