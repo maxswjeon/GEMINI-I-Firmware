@@ -1,7 +1,13 @@
 {
-  "files.associations": {
-    "stdarg.h": "c",
-    "reent.h": "c",
-    "algorithm": "cpp"
-  }
+	"files.associations": {
+		"stdarg.h": "c",
+		"reent.h": "c",
+		"algorithm": "cpp",
+		"functional": "cpp",
+		"array": "cpp",
+		"string": "cpp",
+		"string_view": "cpp",
+		"ranges": "cpp",
+		"random": "cpp"
+	}
 }

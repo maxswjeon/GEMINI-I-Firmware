@@ -20,8 +20,9 @@
 #define IMU_LIST_VIRT_SENSORS 0
 #define IMU_LIST_PHYS_SENSORS 0
 
+#define DEBUG_PAUSE 0
 #define DEBUG_USB 0
-#define DEBUG_UART 1
+#define DEBUG_UART 0
 #define RTC_CONFIGURE_SUPPORT 1
 
 #endif // __DEFS_H

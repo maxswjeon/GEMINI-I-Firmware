@@ -1,12 +1,6 @@
 [submodule "lib/bosch"]
 	path = lib/bosch
 	url = https://github.com/boschsensortec/BHY2_SensorAPI
-[submodule "utils/cdc_msc_hid/lib/tinyusb"]
-	path = utils/cdc_msc_hid/lib/tinyusb
-	url = https://github.com/hathach/tinyusb
-[submodule "utils/cdc_msc_hid/lib/Pico-PIO-USB"]
-	path = utils/cdc_msc_hid/lib/Pico-PIO-USB
-	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB
 [submodule "lib/tinyusb"]
 	path = lib/tinyusb
 	url = https://github.com/hathach/tinyusb

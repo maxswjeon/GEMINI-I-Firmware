@@ -59,5 +59,10 @@ int32_t tud_cdc_buffer_read();
 void tud_cdc_buffer_write(int32_t c);
 
 bool is_printable(uint8_t c);
+uint8_t gencrc(uint8_t *data, size_t len);
+int16_t hstr_to_uint16(uint8_t *buf);
+uint8_t uint16_to_hstr(uint64_t val, uint8_t shift);
+
+uint32_t init_pwm(uint8_t pin);
 
 #endif // __UTIL_H

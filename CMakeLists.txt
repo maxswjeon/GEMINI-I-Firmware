@@ -80,9 +80,11 @@ target_link_libraries(${PROJECT} PRIVATE
     pico_multicore
     pico_sync
     pico_rand
+    hardware_adc
     hardware_pwm
     hardware_i2c
     hardware_spi
+    hardware_clocks
     hardware_watchdog
     hardware_pio
     hardware_dma

@@ -1,0 +1,17 @@
+#ifndef __FLASH_H
+#define __FLASH_H
+
+#define FLASH_TARGET_OFFSET (256 * 1024)
+
+#define FLASH_ADC0_TARGET0 0x00
+#define FLASH_ADC0_TARGET1 0x01
+#define FLASH_ADC1_TARGET0 0x02
+#define FLASH_ADC1_TARGET1 0x03
+
+#define FLASH_MOTOR1_INITS 0x04
+#define FLASH_MOTOR2_INITS 0x05
+
+#define FLASH_CONFIG0 0x06
+#define FLASH_CONFIG1 0x07
+
+#endif // __FLASH_H

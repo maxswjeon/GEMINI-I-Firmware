@@ -11,6 +11,9 @@
 #include <pico/runtime.h>
 #include <pico/sync.h>
 
+#include <hardware/pwm.h>
+#include <hardware/clocks.h>
+
 #include "tusb.h"
 
 // auto_init_mutex(serial_mutex);
@@ -502,4 +505,108 @@ bool is_printable(uint8_t c)
 		}
 	}
 	return false;
+}
+
+uint8_t gencrc(uint8_t *data, size_t len)
+{
+	uint8_t crc = 0xff;
+	size_t i, j;
+	for (i = 0; i < len; i++)
+	{
+		crc ^= data[i];
+		for (j = 0; j < 8; j++)
+		{
+			if ((crc & 0x80) != 0)
+				crc = (uint8_t)((crc << 1) ^ 0x31);
+			else
+				crc <<= 1;
+		}
+	}
+	return crc;
+}
+
+int16_t hstr_to_uint16(uint8_t *buf)
+{
+	uint8_t val = 0;
+
+	if ((buf[0] >= 'a' && buf[0] <= 'f'))
+	{
+		buf[0] -= 'a';
+		buf[0] += 10;
+	}
+	else if ((buf[1] >= 'A' && buf[1] <= 'F'))
+	{
+		buf[0] -= 'A';
+		buf[0] += 10;
+	}
+	else if (buf[0] >= '0' && buf[0] <= '9')
+	{
+		buf[0] -= '0';
+	}
+	else
+	{
+		return -1;
+	}
+	val = buf[0] * 16;
+
+	if ((buf[1] >= 'a' && buf[1] <= 'f'))
+	{
+		buf[1] -= 'a';
+		buf[1] += 10;
+	}
+	else if ((buf[1] >= 'A' && buf[1] <= 'F'))
+	{
+		buf[1] -= 'A';
+		buf[1] += 10;
+	}
+	else if (buf[1] >= '0' && buf[1] <= '9')
+	{
+		buf[1] -= '0';
+	}
+	else
+	{
+		return -1;
+	}
+	val |= buf[1];
+
+	return val;
+}
+
+uint8_t uint16_to_hstr(uint64_t val, uint8_t shift)
+{
+	uint8_t buf = (uint8_t)((val >> shift) & 0x0F);
+	if (buf < 10)
+	{
+		buf += '0';
+	}
+	else
+	{
+		buf += 'A' - 10;
+	}
+	return buf;
+}
+
+uint32_t init_pwm(uint8_t pin)
+{
+	gpio_init(pin);
+	gpio_set_function(pin, GPIO_FUNC_PWM);
+
+	uint slice_num = pwm_gpio_to_slice_num(pin);
+	uint channel_num = pwm_gpio_to_channel(pin);
+
+	uint32_t clock = clock_get_hz(clk_sys);
+
+	uint32_t div = clock / 50 / 4096 + (clock % (50 * 4096) != 0);
+	if (div / 16 == 0)
+	{
+		div = 16;
+	}
+	pwm_set_clkdiv_int_frac(slice_num, div / 16, div & 0xF);
+
+	uint32_t wrap = clock * 16 / div / 50 - 1;
+	pwm_set_wrap(slice_num, wrap);
+
+	pwm_set_enabled(slice_num, true);
+
+	return wrap;
 }
